@@ -1,10 +1,14 @@
 from app.services.embedding_service import embed_text
 from app.db.vector_store import collection
+from app.utils.file_loader import load_text_files
+from pathlib import Path
 import hashlib
+
+DATA_DIR = Path("data/docs")
 
 print("Ingesting documents...")
 
-documents = [
+old_documents = [
     "Leena is a sniper.",
     "Kai is Leena's brother.",
     "Leena likes Raz.",
@@ -17,25 +21,22 @@ def document_id(text: str) -> str:
 existing_ids = set(collection.get()['ids'])
 
 added = 0
-skipped = 0
+updated = 0
 
-for doc in documents:
+for doc in load_text_files(DATA_DIR):
     
-    doc_id = document_id(doc)
+    doc_id = document_id(doc["id"])
+    embedding = embed_text(doc["text"])
 
-    if doc_id in existing_ids:
-        skipped+=1
-        continue
-
-    embedding = embed_text(doc)
-    collection.add(
-        documents=[doc],
+    collection.upsert(
+        documents=[doc["text"]],
         embeddings=[embedding],
-        ids=[doc_id]
+        ids=[doc_id],
+        metadatas=[{"source": doc["source"], "title": doc["id"]}]
     )
 
-    added+=1
+    updated+=1
     #print(f"Ingested document: {doc}")
 
-print(f"Documents ingested successfully. Added: {added}, Skipped (duplicates): {skipped}")
+print(f"Documents ingested successfully. Updated: {updated}")
 print("Document count:", collection.count())

@@ -11,6 +11,8 @@ def answer_question(question: str) -> str:
 
     prompt = f"""
 Use the following context to answer the question.
+If the answer is not contained within the context, respond with 'No relevant documents found'.
+If the question is not related to the context, respond with 'No relevant documents found'.
 
 Context:
 {context}
