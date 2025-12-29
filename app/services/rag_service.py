@@ -19,4 +19,6 @@ Question:
 {question}
 """
     
+    print("Retrieved results: ", results)
+
     return generate_answer(prompt)
