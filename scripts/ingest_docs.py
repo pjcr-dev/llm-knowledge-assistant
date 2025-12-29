@@ -1,5 +1,8 @@
 from app.services.embedding_service import embed_text
 from app.db.vector_store import collection
+import hashlib
+
+print("Ingesting documents...")
 
 documents = [
     "Leena is a sniper.",
@@ -8,17 +11,31 @@ documents = [
     "Claude is Leena's commander."
 ]
 
-print("Ingesting documents...")
+def document_id(text: str) -> str:
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
-for i, doc in enumerate(documents):
+existing_ids = set(collection.get()['ids'])
+
+added = 0
+skipped = 0
+
+for doc in documents:
     
+    doc_id = document_id(doc)
+
+    if doc_id in existing_ids:
+        skipped+=1
+        continue
+
     embedding = embed_text(doc)
     collection.add(
         documents=[doc],
         embeddings=[embedding],
-        ids=[str(i)]
+        ids=[doc_id]
     )
-    #print(f"Ingested document {i}: {doc}")
 
-print("Documents ingested successfully.")
+    added+=1
+    #print(f"Ingested document: {doc}")
+
+print(f"Documents ingested successfully. Added: {added}, Skipped (duplicates): {skipped}")
 print("Document count:", collection.count())
