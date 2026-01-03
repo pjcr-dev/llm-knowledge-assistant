@@ -12,6 +12,7 @@ def add_documents(texts, embeddings):
         ids=ids
     )
 
+#Now unused function, kept for reference
 def query_documents(query_embedding, n_results=3):
     return collection.query(
         query_embeddings=[query_embedding],
