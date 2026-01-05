@@ -2,192 +2,172 @@
 
 ## Overview
 
-This project is a **minimal Retrieval-Augmented Generation (RAG) prototype** that demonstrates how to build an LLM-powered knowledge assistant using embeddings and a vector database. The system retrieves relevant information from stored documents and uses a Large Language Model (LLM) to generate grounded answers.
+This project is a **Retrieval-Augmented Generation (RAG)** system that allows users to query a local knowledge base using natural language. It combines:
 
-The primary goal of this repository is to showcase **practical, end-to-end LLM application development**, suitable for portfolio and interview discussions.
+* Document ingestion and chunking
+* Vector embeddings stored in a vector database (Chroma)
+* Semantic retrieval
+* Large Language Model (LLM) generation grounded in retrieved context
+* A simple HTML-based user interface
 
----
-
-## Key Features
-
-* LLM API integration for text generation
-* Text embeddings for semantic search
-* Vector database for document storage and retrieval
-* Simple Retrieval-Augmented Generation (RAG) pipeline
-* Modular, easy-to-extend project structure
+The system is designed to resemble a **real internal knowledge assistant**, not a toy demo.
 
 ---
 
-## How Retrieval-Augmented Generation (RAG) Works
+## Architecture
 
-1. **Document Ingestion**
-
-   * Text documents are converted into vector embeddings.
-   * Embeddings are stored in a vector database.
-
-2. **Query Processing**
-
-   * A user question is converted into an embedding.
-   * The vector database is queried to find the most relevant documents.
-
-3. **Answer Generation**
-
-   * Retrieved documents are injected into the LLM prompt as context.
-   * The LLM generates an answer grounded in the retrieved information.
-
-This approach reduces hallucinations and allows the model to answer questions using custom knowledge.
-
----
-
-## Tech Stack
-
-* **Python 3.10+**
-* **OpenAI API** (LLM + embeddings)
-* **ChromaDB** (vector database)
-* **LangChain** (optional utilities)
-* **python-dotenv** (environment variable management)
+```
+User (Browser)
+   │
+   ▼
+FastAPI Web Server
+   │
+   ├── / (HTML UI)
+   └── /query (Form POST)
+        │
+        ▼
+Query Pipeline
+   │
+   ├── Embed user question
+   ├── Retrieve top-K document chunks (Chroma)
+   ├── Filter by relevance (distance threshold)
+   ├── Group & de-duplicate by source
+   ├── Build structured context
+   │
+   ▼
+LLM (Answer Generation)
+   │
+   ▼
+HTML Response (Answer + Sources)
+```
 
 ---
 
 ## Project Structure
 
 ```
-llm-knowledge-assistant/
-│
-├── data/                 # Sample or ingested documents
+.
+├── app/
+│   ├── db/                 # Vector store setup (Chroma)
+│   ├── models/             # Pydantic models
+│   ├── services/           # Embedding, query, and LLM logic
+│   ├── utils/              # Chunking and file loading
+│   └── api/                # FastAPI routes
+├── data/
+│   └── docs/               # Source documents (Markdown)
 ├── scripts/
-│   ├── test_llm.py       # Basic LLM API test
-│   ├── embeddings_test.py# Embeddings + vector DB test
-│   └── rag_minimal.py    # End-to-end RAG pipeline
-├── .env                  # API keys (not committed)
-├── .gitignore
+│   └── ingest_documents.py # Idempotent ingestion script
+├── chroma_db/              # Vector database (gitignored)
+├── main.py                 # FastAPI entry point
 └── README.md
 ```
 
 ---
 
-## Setup Instructions
+## Data Flow
 
-### 1. Clone the Repository
+### Ingestion Flow
 
-```bash
-git clone <repository-url>
-cd llm-knowledge-assistant
-```
+1. Raw documents are placed in `data/docs/`
+2. Each document is loaded from disk
+3. Documents are chunked into overlapping text segments
+4. Each chunk is embedded using an embedding model
+5. Chunks are **upserted** into Chroma using stable IDs
 
-### 2. Create and Activate Virtual Environment
-
-```bash
-python -m venv venv
-```
-
-* Windows:
-
-```bash
-venv\Scripts\activate
-```
-
-* macOS / Linux:
-
-```bash
-source venv/bin/activate
-```
+This design ensures ingestion is **idempotent**: re-running ingestion updates existing documents instead of duplicating them.
 
 ---
 
-### 3. Install Dependencies
+### Query Flow
 
-```bash
-pip install --upgrade pip
-pip install openai langchain chromadb python-dotenv jupyter
-```
-
----
-
-### 4. Configure Environment Variables
-
-Create a `.env` file in the project root:
-
-```
-OPENAI_API_KEY=your_api_key_here
-```
+1. User submits a question via the HTML form
+2. The question is embedded
+3. Chroma retrieves top-K nearest chunks
+4. Results are filtered by distance (relevance threshold)
+5. Chunks are grouped by document source
+6. A limited number of chunks per source are selected
+7. A structured context is built
+8. The LLM generates an answer grounded in the retrieved context
+9. The answer and sources are rendered as HTML
 
 ---
 
-## Usage
+## Key Design Decisions
 
-### Test LLM Connectivity
+### Why Chunking?
 
-```bash
-python scripts/test_llm.py
-```
+* Improves retrieval precision
+* Avoids context window overflow
+* Enables long documents to be queried effectively
 
-Expected result: a short LLM-generated response printed to the terminal.
+### Why Stable IDs + Upsert?
 
----
+* Allows documents to be updated cleanly
+* Prevents duplicate embeddings
+* Matches real-world ingestion pipelines
 
-### Test Embeddings and Vector Search
+### Why Distance Filtering?
 
-```bash
-python scripts/embeddings_test.py
-```
+* Prevents irrelevant chunks from polluting context
+* Reduces hallucinations
 
-Expected result: a document relevant to the test query is returned.
+### Why Group by Source?
 
----
-
-### Run Minimal RAG Pipeline
-
-```bash
-python scripts/rag_minimal.py
-```
-
-Expected result: an answer generated using retrieved contextual information.
+* Avoids over-representing a single document
+* Improves answer diversity and grounding
 
 ---
 
-## Example Use Case
+## Error Handling & UX
 
-* Internal knowledge assistant
-* FAQ chatbot
-* Document-based Q&A system
-* Foundation for a web-based AI assistant
+The system is designed to fail gracefully:
+
+* Empty database → user-friendly warning
+* No relevant documents → explicit message
+* Unexpected errors → safe fallback message
+
+The UI never exposes stack traces or crashes.
 
 ---
 
 ## Limitations
 
-* Uses small sample text instead of large document ingestion
-* No persistence layer for vector storage
-* CLI-based interface only
+* No authentication or rate limiting
+* Simple HTML UI (no frontend framework)
+* No automatic document upload via UI
+* LLM prompt grounding can be further tightened
 
-These are intentional to keep the prototype minimal and focused.
-
----
-
-## Future Improvements
-
-* PDF / Markdown document ingestion
-* Persistent vector database
-* FastAPI backend
-* Web UI (React or simple frontend)
-* Authentication and usage limits
+These are intentional tradeoffs for clarity and learning focus.
 
 ---
 
-## Why This Project Matters
+## How to Run
 
-This project demonstrates:
+1. Install dependencies
+2. Start the API server:
 
-* Practical LLM API usage
-* Understanding of embeddings and semantic search
-* Real-world RAG architecture
-* Ability to design and implement AI systems beyond toy examples
+```bash
+uvicorn main:app --reload
+```
 
-It is suitable for **AI Engineer, Machine Learning Engineer, or Software Engineer** portfolios.
+3. Ingest documents:
+
+```bash
+python scripts/ingest_documents.py
+```
+
+4. Open a browser at:
+
+```
+http://localhost:8000
+```
 
 ---
 
-## License
+## What This Project Demonstrates
 
-MIT License
+* End-to-end RAG system design
+* Vector database usage
+* Embedding-based semantic search
+* Backend + UI integration
+* Production-style error handling
