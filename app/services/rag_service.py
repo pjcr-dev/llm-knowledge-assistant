@@ -54,20 +54,31 @@ def build_context(chunks):
     return "\n\n".join(context_parts)
 
 
-def answer_question(question: str, context) -> str:
-    query_embedding = embed_text(question)
-    results = query_chunks(query_embedding)
+def answer_question(question: str) -> dict:
+    if collection.count() == 0:
+        return {
+            "answer": "The knowledge base is empty.",
+            "sources": []
+        }
 
-    prompt = f"""
-Use the following context to answer the question.
 
-Context:
-{context}
+    raw_results = query_chunks(embed_text(question))
+    filtered = filter_results(raw_results)
 
-Question:
-{question}
-"""
-    
-    #print("Retrieved results: ", results)
+    if not filtered:
+        return {
+            "answer": "I don't know based on the provided documents.",
+            "sources": []
+        }
+        
+    grouped = group_by_source(filtered)
+    selected = select_best_chunks(grouped)
+    context = build_context(selected)
+        
+    answer = generate_answer(question, context)
+    sources = sorted({c["title"] for c in selected})
 
-    return generate_answer(prompt)
+    return {
+        "answer": answer,
+        "sources": sources
+    }

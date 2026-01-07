@@ -1,10 +1,7 @@
 from fastapi import APIRouter, Form
 from pydantic import BaseModel
-from app.services.embedding_service import embed_text
-from app.services.rag_service import (query_chunks, answer_question, filter_results, group_by_source, select_best_chunks, build_context)
+from app.services.rag_service import answer_question
 from fastapi.responses import HTMLResponse
-from app.db.vector_store import collection
-from app.services.llm_service import generate_answer
 
 router = APIRouter()
 
@@ -16,62 +13,12 @@ class QueryResponse(BaseModel):
 
 @router.post("/query", response_class=HTMLResponse)
 def query(question: str = Form(...)):
-
-    if collection.count() == 0:
-        return render_page(
-            question,
-            "The knowledge base is empty. Please ingest documents first.",
-            []
-        )
-
-    try:
-        raw_results = query_chunks(embed_text(question))
-        filtered = filter_results(raw_results)
-
-        if not filtered:
-            return render_page(
-                question,
-                "No relevant information found for your question.",
-                []
-            )
-        
-        grouped = group_by_source(filtered)
-        selected = select_best_chunks(grouped)
-        context = build_context(selected)
-        
-        answer = answer_question(question, context)
-
-        sources = sorted({c["title"] for c in selected})
-        
-        #print("Retrieved:", len(filtered))
-        # for c in selected:
-        #     print(c["title"], c["distance"])
-
-        return render_page(question, answer, sources)
     
-        # ALTERNATIVE:
-        # return HTMLResponse(
-        #     content=render_page(question, answer, sources)
-        # )
+    result = answer_question(question)
 
-    except Exception as e:
-        return render_page(
-            question,
-            "An error occurred while processing your request",
-            [],
-            error=str(e)
-        )
-    
-        # ALTERNATIVE:
-        # return HTMLResponse(
-        #         content=render_page(
-        #             question,
-        #             "An unexpected error occurred.",
-        #             [],
-        #             error=str(e)
-        #         ),
-        #         status_code=500
-        #     )
+    return HTMLResponse(
+        content=render_page(question, result["answer"], result["sources"])
+    )
 
 @router.get("/", response_class=HTMLResponse)
 def home():
