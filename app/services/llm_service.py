@@ -2,7 +2,8 @@ from openai import OpenAI
 from app.core.config import settings
 
 client = OpenAI(api_key=settings.openai_api_key)
-#client = OpenAI()
+
+MAX_CONTENT_LENGTH = 3000
 
 SYSTEM_PROMPT = """
 You are a knowledge assistant. Answer the user's questions using ONLY the provided context.
@@ -27,6 +28,9 @@ def generate_answer(question: str, context: str) -> str:
 
     if not context.strip():
         return "I don't know based on the provided documents."
+    
+
+    context = context[:MAX_CONTENT_LENGTH]
 
     prompt = f"""
 {SYSTEM_PROMPT}
