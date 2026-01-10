@@ -10,8 +10,6 @@ This project is a **Retrieval-Augmented Generation (RAG)** system that allows us
 * Large Language Model (LLM) generation grounded in retrieved context
 * A simple HTML-based user interface
 
-The system is designed to resemble a **real internal knowledge assistant**, not a toy demo.
-
 ---
 
 ## Architecture
@@ -135,32 +133,25 @@ The UI never exposes stack traces or crashes.
 * No authentication or rate limiting
 * Simple HTML UI (no frontend framework)
 * No automatic document upload via UI
-* LLM prompt grounding can be further tightened
 
 These are intentional tradeoffs for clarity and learning focus.
 
 ---
 
-## How to Run
+## How to Run Locally
 
-1. Install dependencies
-2. Start the API server:
-
-```bash
-uvicorn main:app --reload
+1. Create a virtual environment
+2. Install dependencies
 ```
-
-3. Ingest documents:
-
-```bash
-python scripts/ingest_documents.py
+   pip install -r requirements.txt
 ```
-
-4. Open a browser at:
-
+3. Create a `.env` file based on `.env.example`
+4. Start the server
 ```
-http://localhost:8000
+   uvicorn app.main:app --reload
 ```
+5. Open http://127.0.0.1:8000
+
 
 ---
 

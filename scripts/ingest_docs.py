@@ -14,10 +14,7 @@ def document_id(text: str) -> str:
 
 existing_ids = set(collection.get()['ids'])
 
-added = 0
 updated = 0
-
-
 
 for doc in load_text_files(DATA_DIR):
     
@@ -39,4 +36,4 @@ for doc in load_text_files(DATA_DIR):
     print(f"Ingested document: {doc["id"]}")
 
 print(f"Documents ingested successfully. Updated: {updated}")
-print("Document count:", collection.count())
+print("Chunk count:", collection.count())

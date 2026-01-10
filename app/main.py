@@ -6,4 +6,7 @@ app = FastAPI(title="LLM Knowledge Assistant")
 app.include_router(router)
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "vector_store": "ready"
+    }

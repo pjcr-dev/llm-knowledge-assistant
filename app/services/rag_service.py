@@ -16,6 +16,11 @@ def filter_results(results):
     filtered = []
 
     for doc, meta, distance in zip(results["documents"][0], results["metadatas"][0], results["distances"][0]):
+
+        # print(f"[{meta['source']}] distance={distance:.4f}")
+        # print(doc[:200])
+        # print("----")
+        
         if distance < MAX_DISTANCE:
             filtered.append({
                 "text": doc, 
@@ -74,7 +79,7 @@ def answer_question(question: str) -> dict:
     grouped = group_by_source(filtered)
     selected = select_best_chunks(grouped)
     context = build_context(selected)
-        
+    
     answer = generate_answer(question, context)
     sources = sorted({c["title"] for c in selected})
 
