@@ -2,6 +2,8 @@ from app.services.embedding_service import embed_text
 from app.services.llm_service import generate_answer
 from collections import defaultdict
 from app.db.vector_store import collection
+from app.core.logging import logger
+from app.core.config import settings
 
 
 def query_chunks(query_embedding, TOP_K=6):
@@ -60,17 +62,27 @@ def build_context(chunks):
 
 
 def answer_question(question: str) -> dict:
+
     if collection.count() == 0:
+
+        logger.warning("Query attempted with empty knowledge base.")
+
         return {
             "answer": "The knowledge base is empty.",
             "sources": []
         }
 
 
+    logger.info(f"Received query: {question}")
     raw_results = query_chunks(embed_text(question))
+    logger.info("Retrieved %d chunks (unfiltered)", len(raw_results))
+
     filtered = filter_results(raw_results)
 
     if not filtered:
+
+        logger.warning("No relevant documents found for query.")
+        
         return {
             "answer": "I don't know based on the provided documents.",
             "sources": []
@@ -82,6 +94,19 @@ def answer_question(question: str) -> dict:
     
     answer = generate_answer(question, context)
     sources = sorted({c["title"] for c in selected})
+
+    if "i don't know" in answer.lower():
+        logger.info("Model refused due to insufficient context.")
+
+    elif not sources:
+        logger.warning("Answer generated without sources.")
+
+    if settings.debug:
+        return {
+            "answer": answer,
+            "sources": sources,
+            "debug": {"retrieved_chunks": raw_results}
+        }
 
     return {
         "answer": answer,
