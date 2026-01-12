@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     chroma_persist_dir: str = "chroma_db"
     model_name: str = "gpt-4.1-mini"
     debug: bool = False
+    run_ingest_on_startup: bool = True
     
     class Config:
         env_file = ".env"

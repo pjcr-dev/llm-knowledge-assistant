@@ -19,9 +19,10 @@ def filter_results(results):
 
     for doc, meta, distance in zip(results["documents"][0], results["metadatas"][0], results["distances"][0]):
 
+        # print(f"---- {meta.get('chunk')} ----")
         # print(f"[{meta['source']}] distance={distance:.4f}")
         # print(doc[:200])
-        # print("----")
+        # print("------------------------------")
         
         if distance < MAX_DISTANCE:
             filtered.append({
@@ -75,7 +76,7 @@ def answer_question(question: str) -> dict:
 
     logger.info(f"Received query: {question}")
     raw_results = query_chunks(embed_text(question))
-    logger.info("Retrieved %d chunks (unfiltered)", len(raw_results))
+    logger.info("Retrieved %d chunks (unfiltered)", len(raw_results["documents"][0]))
 
     filtered = filter_results(raw_results)
 
