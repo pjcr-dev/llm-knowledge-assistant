@@ -33,7 +33,7 @@ def ingest_docs():
             )
 
         updated+=1
-        logger.info(f"Ingested document: {doc["id"]}")
+        logger.info(f"Ingested document: {doc['id']}")
 
     logger.info(f"Documents ingested successfully. Updated: {updated}")
     logger.info("Chunk count: %d", collection.count())
