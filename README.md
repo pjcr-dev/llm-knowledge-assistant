@@ -72,8 +72,6 @@ HTML Response (Answer + Sources)
 4. Each chunk is embedded using an embedding model
 5. Chunks are **upserted** into Chroma using stable IDs
 
-This design ensures ingestion is **idempotent**: re-running ingestion updates existing documents instead of duplicating them.
-
 ---
 
 ### Query Flow
@@ -90,51 +88,11 @@ This design ensures ingestion is **idempotent**: re-running ingestion updates ex
 
 ---
 
-## Key Design Decisions
-
-### Why Chunking?
-
-* Improves retrieval precision
-* Avoids context window overflow
-* Enables long documents to be queried effectively
-
-### Why Stable IDs + Upsert?
-
-* Allows documents to be updated cleanly
-* Prevents duplicate embeddings
-* Matches real-world ingestion pipelines
-
-### Why Distance Filtering?
-
-* Prevents irrelevant chunks from polluting context
-* Reduces hallucinations
-
-### Why Group by Source?
-
-* Avoids over-representing a single document
-* Improves answer diversity and grounding
-
----
-
-## Error Handling & UX
-
-The system is designed to fail gracefully:
-
-* Empty database → user-friendly warning
-* No relevant documents → explicit message
-* Unexpected errors → safe fallback message
-
-The UI never exposes stack traces or crashes.
-
----
-
-## Limitations
+## Limitations/Future Improvements
 
 * No authentication or rate limiting
 * Simple HTML UI (no frontend framework)
 * No automatic document upload via UI
-
-These are intentional tradeoffs for clarity and learning focus.
 
 ---
 
